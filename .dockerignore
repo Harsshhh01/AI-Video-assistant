@@ -1,0 +1,21 @@
+# Never ship secrets or local state into the image.
+.env
+.venv/
+venv/
+data/
+
+__pycache__/
+*.py[cod]
+*.log
+
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Windows-only helpers, meaningless in a Linux container.
+setup.ps1
+run.ps1
+
+README.md
+deploy/

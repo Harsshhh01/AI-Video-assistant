@@ -1,0 +1,31 @@
+# AI Video Assistant — Python dependencies
+# Target: Python 3.11 or 3.12  (3.13+ has no torch wheels yet)
+# Install with:  py -3.11 -m pip install -r requirements.txt
+
+# ── Web server ────────────────────────────────────────────────────────────────
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9          # multipart/form-data uploads
+
+# ── Audio acquisition & processing ────────────────────────────────────────────
+yt-dlp>=2024.4.9                 # pull audio from YouTube and friends
+pydub>=0.25.1                    # format conversion / chunking (needs ffmpeg)
+
+# ── Speech to text ────────────────────────────────────────────────────────────
+openai-whisper>=20231117         # local transcription
+torch>=2.2.0                     # Whisper backend (CPU build is enough)
+
+# ── LLM orchestration (LangChain LCEL + Mistral) ──────────────────────────────
+langchain-core>=0.2.0
+langchain-text-splitters>=0.2.0
+langchain-mistralai>=0.1.0
+
+# ── RAG ───────────────────────────────────────────────────────────────────────
+langchain-chroma>=0.1.2
+chromadb>=0.5.0
+langchain-huggingface>=0.0.3
+sentence-transformers>=3.0.0
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+requests>=2.32.0

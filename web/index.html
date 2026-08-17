@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Video Assistant — Turn recordings into decisions</title>
+<meta name="description" content="Transcribe, summarise and chat with any meeting recording or YouTube video. Local Whisper transcription, Mistral summaries, RAG-powered Q&amp;A.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="aurora" aria-hidden="true"></div>
+
+<header class="site-header">
+  <a class="brand" href="/">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/>
+      </svg>
+    </span>
+    <span class="brand-text">AI&nbsp;Video<span class="brand-dim">Assistant</span></span>
+  </a>
+
+  <nav class="site-nav" aria-label="Sections">
+    <a href="#analyse">Analyse</a>
+    <a href="#how">How it works</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+
+  <div class="header-status">
+    <button id="status-pill" class="status-pill" type="button" aria-expanded="false" aria-controls="status-panel">
+      <span class="status-led" data-state="unknown"></span>
+      <span id="status-label">Checking…</span>
+    </button>
+    <div id="status-panel" class="status-panel" hidden></div>
+  </div>
+</header>
+
+<main>
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <p class="eyebrow">Meeting intelligence · runs on your machine</p>
+    <h1>
+      Every recording, turned into<br>
+      <span class="grad">a decision you can act on.</span>
+    </h1>
+    <p class="lede">
+      Drop in a YouTube link or a recording from your laptop. You get a clean
+      transcript, a structured summary, the action items with owners, and a chat
+      window that answers questions using only what was actually said.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#analyse">Analyse a recording</a>
+      <a class="btn btn-ghost" href="#how">See how it works</a>
+    </div>
+    <ul class="hero-stats">
+      <li><strong>Whisper</strong><span>local transcription</span></li>
+      <li><strong>Mistral</strong><span>summaries &amp; extraction</span></li>
+      <li><strong>Chroma</strong><span>retrieval-grounded chat</span></li>
+    </ul>
+  </section>
+
+  <!-- ── Analyse ───────────────────────────────────────────────────────── -->
+  <section id="analyse" class="panel">
+    <div class="panel-head">
+      <h2>Start an analysis</h2>
+      <p>English runs entirely offline through Whisper. Hinglish is translated to English by Sarvam AI.</p>
+    </div>
+
+    <form id="analyse-form" class="analyse-card" novalidate>
+      <div class="tabs" role="tablist" aria-label="Input source">
+        <button type="button" class="tab is-active" role="tab" aria-selected="true" data-mode="url" id="tab-url" aria-controls="pane-url">Paste a link</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-mode="file" id="tab-file" aria-controls="pane-file">Upload a file</button>
+      </div>
+
+      <div class="pane" id="pane-url" role="tabpanel" aria-labelledby="tab-url">
+        <label for="source">YouTube URL <span class="hint">or an absolute path on this machine</span></label>
+        <input id="source" name="source" type="text" autocomplete="off" spellcheck="false"
+               placeholder="https://www.youtube.com/watch?v=…">
+      </div>
+
+      <div class="pane" id="pane-file" role="tabpanel" aria-labelledby="tab-file" hidden>
+        <label for="file">Audio or video file</label>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button"
+             aria-describedby="dropzone-help">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/>
+          </svg>
+          <p class="dropzone-title">Drop a file here, or click to browse</p>
+          <p class="dropzone-help" id="dropzone-help">mp4, mkv, mov, webm, mp3, wav, m4a — up to <span id="max-mb">500</span> MB</p>
+          <input id="file" name="file" type="file" accept="audio/*,video/*,.mkv,.m4v,.opus,.flv,.wma">
+        </div>
+        <p id="file-chosen" class="file-chosen" hidden></p>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label for="language">Spoken language</label>
+          <div class="select-wrap">
+            <select id="language" name="language">
+              <option value="english">English — local Whisper</option>
+              <option value="hinglish">Hinglish — Sarvam AI</option>
+            </select>
+          </div>
+        </div>
+        <button id="submit-btn" class="btn btn-primary btn-submit" type="submit">
+          <span class="btn-label">Analyse recording</span>
+          <span class="spinner" hidden aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <p class="form-note">
+        A one-hour recording takes roughly 10–20 minutes on CPU. Keep this tab
+        open — progress is reported live below.
+      </p>
+    </form>
+
+    <!-- Progress -->
+    <div id="progress-card" class="progress-card" hidden>
+      <div class="progress-head">
+        <div>
+          <span class="progress-kicker">Pipeline</span>
+          <h3 id="progress-source">—</h3>
+        </div>
+        <div class="progress-meta">
+          <span id="progress-elapsed" class="mono">0:00</span>
+          <button id="cancel-btn" class="btn btn-quiet" type="button">Dismiss</button>
+        </div>
+      </div>
+      <p id="progress-note" class="progress-note" hidden></p>
+      <ol id="steps" class="steps"></ol>
+      <div id="progress-error" class="alert alert-error" hidden></div>
+    </div>
+  </section>
+
+  <!-- ── Results ───────────────────────────────────────────────────────── -->
+  <section id="results" class="panel" hidden>
+    <div class="result-head">
+      <div>
+        <span class="eyebrow">Analysis complete</span>
+        <h2 id="result-title">—</h2>
+        <p id="result-sub" class="result-sub mono">—</p>
+      </div>
+      <div class="result-actions">
+        <a id="export-btn" class="btn btn-ghost" href="#" download>Download report</a>
+        <button id="reset-btn" class="btn btn-quiet" type="button">New analysis</button>
+      </div>
+    </div>
+
+    <div class="result-grid">
+      <article class="card card-wide" data-accent="violet">
+        <header class="card-head"><h3>Summary</h3></header>
+        <div id="out-summary" class="prose"></div>
+      </article>
+
+      <article class="card" data-accent="green">
+        <header class="card-head"><h3>Action items</h3></header>
+        <div id="out-actions" class="prose"></div>
+      </article>
+
+      <article class="card" data-accent="cyan">
+        <header class="card-head"><h3>Key decisions</h3></header>
+        <div id="out-decisions" class="prose"></div>
+      </article>
+
+      <article class="card" data-accent="amber">
+        <header class="card-head"><h3>Open questions</h3></header>
+        <div id="out-questions" class="prose"></div>
+      </article>
+    </div>
+
+    <details class="transcript">
+      <summary>
+        <span>Full transcript</span>
+        <span id="transcript-words" class="mono">—</span>
+      </summary>
+      <div class="transcript-body">
+        <button id="copy-transcript" class="btn btn-quiet" type="button">Copy transcript</button>
+        <p id="out-transcript" class="transcript-text"></p>
+      </div>
+    </details>
+
+    <!-- Chat -->
+    <div class="chat-card">
+      <header class="chat-head">
+        <div>
+          <h3>Ask the transcript</h3>
+          <p>Answers are grounded in retrieved passages — if it wasn't said, it won't be answered.</p>
+        </div>
+        <button id="clear-chat" class="btn btn-quiet" type="button" hidden>Clear</button>
+      </header>
+
+      <div id="chat-log" class="chat-log" aria-live="polite">
+        <div class="chat-empty">
+          <p>Try one of these to start:</p>
+          <div class="suggestions">
+            <button type="button" class="chip" data-q="What were the main decisions made?">Main decisions?</button>
+            <button type="button" class="chip" data-q="Who is responsible for what, and by when?">Owners &amp; deadlines?</button>
+            <button type="button" class="chip" data-q="What risks or blockers were raised?">Risks raised?</button>
+            <button type="button" class="chip" data-q="Summarise this meeting in three sentences.">Three-sentence recap</button>
+          </div>
+        </div>
+      </div>
+
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" type="text" autocomplete="off" placeholder="Ask anything about this recording…">
+        <button class="btn btn-primary" type="submit" id="chat-send">
+          <span class="btn-label">Send</span>
+          <span class="spinner" hidden aria-hidden="true"></span>
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ── How it works ──────────────────────────────────────────────────── -->
+  <section id="how" class="panel">
+    <div class="panel-head">
+      <h2>How it works</h2>
+      <p>Six stages, each visible while it runs. Nothing is uploaded anywhere except the text sent to the language model.</p>
+    </div>
+    <ol class="how-grid">
+      <li><span class="how-num">01</span><h3>Acquire audio</h3><p>yt-dlp pulls the best audio track from a link; uploads are read straight off disk.</p></li>
+      <li><span class="how-num">02</span><h3>Normalise</h3><p>ffmpeg converts everything to 16 kHz mono WAV and slices it into chunks.</p></li>
+      <li><span class="how-num">03</span><h3>Transcribe</h3><p>Whisper runs locally for English. Hinglish goes to Sarvam, which translates as it transcribes.</p></li>
+      <li><span class="how-num">04</span><h3>Summarise</h3><p>Long transcripts are mapped chunk-by-chunk, then folded into one clean summary.</p></li>
+      <li><span class="how-num">05</span><h3>Extract</h3><p>Action items with owners and deadlines, decisions taken, questions left open.</p></li>
+      <li><span class="how-num">06</span><h3>Index &amp; chat</h3><p>Passages are embedded into a per-analysis Chroma collection for grounded Q&amp;A.</p></li>
+    </ol>
+  </section>
+
+  <!-- ── FAQ ───────────────────────────────────────────────────────────── -->
+  <section id="faq" class="panel">
+    <div class="panel-head"><h2>Questions</h2></div>
+    <div class="faq">
+      <details>
+        <summary>Does my recording leave my computer?</summary>
+        <p>The audio does not. English transcription runs locally through Whisper. The resulting <em>text</em> is sent to the Mistral API for summarisation and to answer your questions. Hinglish is the exception: that audio is sent to Sarvam AI for translation.</p>
+      </details>
+      <details>
+        <summary>Why is it slow?</summary>
+        <p>Whisper transcribes on your CPU. Set <code>WHISPER_MODEL=base</code> or <code>tiny</code> in <code>.env</code> for a large speed-up at some cost in accuracy, or <code>medium</code> when accuracy matters more than time.</p>
+      </details>
+      <details>
+        <summary>What happens to the files afterwards?</summary>
+        <p>Uploads and intermediate WAV chunks are deleted as soon as the analysis finishes. The transcript and its vector index live in memory and on disk under <code>data/</code> until you delete the analysis or restart the server.</p>
+      </details>
+      <details>
+        <summary>Can I run it without the web interface?</summary>
+        <p>Yes — <code>python -m app.cli "https://youtu.be/…" --output report.md</code> runs the same pipeline in the terminal and drops you into a chat prompt.</p>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <span>AI Video Assistant · Whisper · Mistral · LangChain · Chroma</span>
+  <span class="mono" id="footer-version"></span>
+</footer>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<script src="/app.js"></script>
+</body>
+</html>
